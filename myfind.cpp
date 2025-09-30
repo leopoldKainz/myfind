@@ -13,17 +13,11 @@
 
 #define FILE_FOUND_EXIT_CODE 42
 
-void print_usage(char *programm_name)
-{
-    printf("Usage: %s [-h] [-v] [-f dateiname]\n\n", programm_name);
-    return;
-}
-
-// Function für einen case-insensitive String Vergleich
+// Funktion für einen case-insensitive String Vergleich
 int case_insensitive_cmp(const char *s1, const char *s2) {
-//solange beide strings noch zeichen enthalten
+    //solange beide strings noch zeichen enthalten
     while (*s1 && *s2) {
-//Buchstaben werden verglichen
+        //Buchstaben werden verglichen
         if (tolower(*s1) != tolower(*s2)) {
             return 0; //Falls string nicht gleich sind return Wert 0 
         }
@@ -33,6 +27,7 @@ int case_insensitive_cmp(const char *s1, const char *s2) {
     return *s1 == *s2; //Beide Strings sollten gleich enden
 }
 
+//Funiktion für die Suche 
 int find_file_recursive(const char *current_path, const char *target_filename, bool recursive, bool case_insensitive) {
     DIR *dirp;
     struct dirent *direntp;
@@ -64,7 +59,7 @@ int find_file_recursive(const char *current_path, const char *target_filename, b
 
         // Construct the full path
         char full_path[1024]; 
-        if (snprintf(full_path, sizeof(full_path), "%s/%s", current_path, direntp->d_name) >= sizeof(full_path)) {
+        if ((size_t)snprintf(full_path, sizeof(full_path), "%s/%s", current_path, direntp->d_name) >= sizeof(full_path)) {
             continue;
         }
 
@@ -89,13 +84,9 @@ int find_file_recursive(const char *current_path, const char *target_filename, b
 int main(int argc, char *argv[])
 {
     int c;
-    char *dateiname;
     char *programm_name;
-    struct dirent *direntp;
     unsigned short Counter_Option_R = 0;
     unsigned short Counter_Option_i = 0;
-
-    DIR *dirp;
     programm_name = argv[0];
 
     while ((c = getopt(argc, argv, "Ri")) != EOF)
@@ -104,7 +95,6 @@ int main(int argc, char *argv[])
         {
             case '?':
                 fprintf(stderr, "%s error: Unknown option.\n", programm_name);
-                print_usage(programm_name);
                 exit(1);
                 /* Das break ist nach exit() eigentlich nicht mehr notwendig. */
                 break;
@@ -123,7 +113,7 @@ int main(int argc, char *argv[])
         }
     }
     if (argc - optind < 2) {
-        ("Error: At least two required strings must be provided.\n");
+        printf("Error: At least two required strings must be provided.\n");
         printf("Usage: %s [-R] [-i <value>] <required_path> <required_file> [optional_strings...]\n", argv[0]);
         return 1;
     }
@@ -133,8 +123,8 @@ int main(int argc, char *argv[])
     }
 
 
-    int i = 2 + Counter_Option_i + Counter_Option_R;
-    for (i; i < argc; i++) {
+    int i;
+    for (i =  2 + Counter_Option_i + Counter_Option_R; i < argc; i++) {
         const char *target_filename = argv[i];
         const char *search_path = argv[1 + Counter_Option_i + Counter_Option_R];
         pid_t pid = fork();
