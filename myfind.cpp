@@ -128,17 +128,6 @@ int main(int argc, char *argv[])
                 assert(0);
         }
     }
-    if (argc - optind < 2) {
-        printf("Error: At least two required strings must be provided.\n");
-        printf("Usage: %s [-R] [-i <value>] <required_path> <required_file> [optional_strings...]\n", argv[0]);
-        return 1;
-    }
-
-    for (int i = optind + 2; i < argc; i++) {
-        printf("Optional string %d: %s\n", i - optind + - 1, argv[i]);
-    }
-
-
     int i;
     for (i =  2 + Counter_Option_i + Counter_Option_R; i < argc; i++) {
         const char *target_filename = argv[i];
