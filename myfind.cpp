@@ -47,18 +47,34 @@ int find_file_recursive(const char *current_path, const char *target_filename, b
 
         // Check if the current entry's name matches the target file name
         if ((case_insensitive_cmp((direntp->d_name), target_filename) && case_insensitive) || strcmp(direntp->d_name, target_filename) == 0) {
+            
             // File found!
-            char full_path[1024];
-            snprintf(full_path, sizeof(full_path), "%s/%s", current_path, direntp->d_name);
-            printf("✅ FOUND: '%s' at %s\n", target_filename, full_path);
+            char full_path[PATH_MAX]; // Use PATH_MAX for maximum size guarantee
+            char absolute_path[PATH_MAX]; // Buffer for the absolute path
+
+            // 1. Construct the path (still potentially relative)
+            if ((size_t)snprintf(full_path, sizeof(full_path), "%s/%s", current_path, direntp->d_name) >= sizeof(full_path)) {
+                // Path too long, skip
+                continue;
+            }
+
+            // 2. Convert to absolute path using realpath()
+            if (realpath(full_path, absolute_path) == NULL) {
+                // If realpath fails (e.g., path doesn't exist anymore, or permission issues), 
+                // fall back to the original full_path for the user
+                strcpy(absolute_path, full_path); 
+            }
+            
+            // 3. Print the absolute path
+            printf("✅ %d: FOUND: '%s' at %s\n",getpid(), target_filename, absolute_path);
             
             // Close the directory before returning
             while ((closedir(dirp) == -1) && (errno == EINTR));
             return 1; // Signal that the file was found
         }
-
+        
         // Construct the full path
-        char full_path[1024]; 
+        char full_path[PATH_MAX]; 
         if ((size_t)snprintf(full_path, sizeof(full_path), "%s/%s", current_path, direntp->d_name) >= sizeof(full_path)) {
             continue;
         }
@@ -83,7 +99,7 @@ int find_file_recursive(const char *current_path, const char *target_filename, b
 
 int main(int argc, char *argv[])
 {
-    int c;
+    int c; 
     char *programm_name;
     unsigned short Counter_Option_R = 0;
     unsigned short Counter_Option_i = 0;
@@ -135,22 +151,18 @@ int main(int argc, char *argv[])
             continue; 
         } else if (pid == 0) {
             // --- Child Process ---
-            printf("    [PID %d] Searching for: '%s'\n", getpid(), target_filename);
             
             int found = find_file_recursive(search_path, target_filename, Counter_Option_R > 0, Counter_Option_i > 0);
             
             if (found) {
-                // If found, print the PID and exit with a special code
-                printf("    ⭐ MATCH FOUND by PID: %d for file '%s'\n", getpid(), target_filename);
                 exit(FILE_FOUND_EXIT_CODE);
             } else {
                 // If not found, exit with success (0)
-                printf("    [PID %d] Finished search for '%s' (Not Found).\n", getpid(), target_filename);
+                printf("❌ %d Finished search for '%s' (Not Found).\n", getpid(), target_filename);
                 exit(0);
             }
 
         }
-        // --- Parent Process continues the loop to fork the next child ---
     }
 
     // --- Parent Process: Wait for all child processes to finish ---
